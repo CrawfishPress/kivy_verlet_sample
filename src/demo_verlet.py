@@ -25,11 +25,15 @@ from kivy.uix.relativelayout import RelativeLayout
 from kivy.clock import Clock
 from kivy.core.window import Window
 
-from verlet_engine import VerletObject
+from verlet_engine import Vector2, VerletObject
 
 Window.top = 0
 Window.left = 400
 window_size = (1600, 1000)
+
+# Random engine constants
+base_gravity = Vector2(0.0, -0.5)
+delta_t: float = 0.2
 
 
 class SomeCircle(Widget):
@@ -39,16 +43,16 @@ class SomeCircle(Widget):
 
         self.pos: tuple = start_pos
         self.size = 50, 50
-        self.my_verlet: VerletObject = VerletObject(self.pos)
+        self.my_verlet: VerletObject = VerletObject(self.pos, base_gravity, delta_t)
 
         with self.canvas.before:
             Color(*self.color)
             self.circle = Ellipse(pos=self.pos, size=self.size)
 
-    def UpdatePosition(self, delta_t: float):
+    def UpdatePosition(self):
 
         # Don't really have to set the Widget's position, but the Circle does have to be set, so...
-        self.pos = self.my_verlet.UpdatePosition(delta_t)
+        self.pos = self.my_verlet.SolveForPosition()
         self.circle.pos = self.pos
 
 
@@ -77,7 +81,7 @@ class MainPage(RelativeLayout):
     def update_all_circles(self, *args):
 
         for a_ball in self.circles:
-            a_ball.UpdatePosition(0.5)
+            a_ball.UpdatePosition()
 
 
 class canvasMain(App):

@@ -39,17 +39,31 @@ class Vector2:
 
 
 class VerletObject:
-    def __init__(self, initial_pos, **kwargs):
+    def __init__(self, initial_pos: tuple, base_gravity: Vector2, delta_t: float, **kwargs):
 
         self.position_current: Vector2 = Vector2(*initial_pos)
         self.position_old: Vector2 = Vector2(*initial_pos)
-        self.acceleration: Vector2 = Vector2(0.0, -0.2)
+        self.base_gravity: Vector2 = base_gravity
+        self.delta_t = delta_t
 
-    def UpdatePosition(self, delta_t: float) -> Vector2:
+        self.acceleration: Vector2 = Vector2(0.0, 0.0)
+
+    def SolveForPosition(self) -> Vector2:
+
+        self.ApplyGravity()
+        self.UpdatePosition()
+
+        return self.position_current
+
+    def ApplyGravity(self):
+
+        self.acceleration += self.base_gravity
+
+    def UpdatePosition(self):
 
         velocity: Vector2 = self.position_current - self.position_old
 
         self.position_old = self.position_current
-        self.position_current = self.position_current + velocity + self.acceleration * delta_t * delta_t
+        self.position_current = self.position_current + velocity + self.acceleration * self.delta_t * self.delta_t
 
-        return self.position_current
+        self.acceleration = Vector2(0.0, 0.0)  # Reset acceleration to zero - not actually sure why...
