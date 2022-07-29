@@ -1,0 +1,17 @@
+
+# =========================
+# Saves
+*.sav
+
+# Bytecode
+*.pyc
+*.pyo
+
+# PyCharm files
+.idea
+
+# Bitmaps
+*.jpg
+*.bmp
+*.psp
+*.pspimage
