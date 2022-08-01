@@ -53,8 +53,13 @@ from the Verlet-Solver function, which runs on each object. I did actually
 try a sub-step loop in the Solver, but it basically amplified everything.
 Which was fun to watch - sorta like popcorn - but not exactly realistic...
 
+Note: added Links, mostly. The first pass is klunky, because the Widget's
+position, isn't identical to the displayed canvas-circle's center. I need
+to refactor position-handling in general.
+
 """
 
+import random
 import time
 
 from kivy.app import App
@@ -64,7 +69,7 @@ from kivy.uix.relativelayout import RelativeLayout
 from kivy.clock import Clock
 from kivy.core.window import Window
 
-from verlet_engine import Vector2, VerletObject
+from verlet_engine import Vector2, VerletObject, Link
 
 Window.top = 0
 Window.left = 400
@@ -80,10 +85,11 @@ pit_constraints = {
     'damp_factor': 0.5,
     'delta_t': 0.5,
 
-    'ball_radius': 20,
+    'ball_radius': 15,
 }
 
-ball_count = 100
+ball_count = 30
+static_ball_count = 0
 
 
 class BallPit(Widget):
@@ -124,10 +130,14 @@ class MainPage(RelativeLayout):
         super().__init__(**kwargs)
         self.balls = []
         self.delayed_balls = []
+        self.static_balls = []
+        self.links = []
         self.constraints = {}
 
         self.add_ball_pit()
         self.add_balls()
+        self.add_static_balls()
+        # self.add_links()
 
         Clock.schedule_interval(self.update_all_circles, 1/60.0)
 
@@ -140,15 +150,41 @@ class MainPage(RelativeLayout):
         VerletObject.constraints = pit_constraints
         ball_radius = pit_constraints['ball_radius']
 
-        some_pos = (750, 800)
         some_size = (ball_radius * 2, ball_radius * 2)
         some_color = (1.0, 1.0, 1.0, 1.0)
 
         for x in range(0, ball_count):
+            rand_x = random.randrange(0, 200, 20)
+            some_pos = (600 + rand_x, 800)
             one_circle = OneCircle(some_pos, some_size, some_color)
             self.delayed_balls.append(one_circle)
 
         Clock.schedule_interval(self.add_circle_on_delay, 1/4.0)
+
+    def add_static_balls(self):
+
+        VerletObject.constraints = pit_constraints
+        ball_radius = pit_constraints['ball_radius']
+
+        some_pos = (500, 800)
+        some_size = (ball_radius * 2, ball_radius * 2)
+        some_color = (1.0, 1.0, 1.0, 1.0)
+        for x in range(0, static_ball_count):
+            one_circle = OneCircle(some_pos, some_size, some_color)
+            self.static_balls.append(one_circle)
+            self.add_widget(one_circle)
+
+    def add_links(self):
+
+        one_link = Link(self.static_balls[0].my_verlet, self.delayed_balls[0].my_verlet, 40, True)
+        self.links.append(one_link)
+
+        one_link = Link(self.delayed_balls[0].my_verlet, self.delayed_balls[1].my_verlet, 40, True)
+        self.links.append(one_link)
+
+        # Wackiness ensues:
+        # one_link = Link(self.delayed_balls[1].my_verlet, self.delayed_balls[2].my_verlet, 40, True)
+        # self.links.append(one_link)
 
     def add_ball_pit(self):
 
@@ -184,6 +220,10 @@ class MainPage(RelativeLayout):
                     collision_list.append((a_ball, one_ball))
                     a_ball.my_verlet.position_current += new_vec
                     one_ball.my_verlet.position_current -= new_vec
+
+        # Update links
+        for one_link in self.links:
+            one_link.apply_link()
 
 
 class canvasMain(App):

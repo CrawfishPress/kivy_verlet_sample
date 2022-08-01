@@ -102,19 +102,6 @@ class VerletObject:
 
     def DetectCollision(self, some_other_Verlet) -> (bool, Vector2):
 
-        """
-            VerletObject& object_2 = object_container[k];
-            const Vec2 collision_axis = object_1.position_current - object_2.position_current
-            const float dist = MathVec::length(collision_axis);
-
-            if (dist < 100.0f) {
-                const Vec2 n = collision_axis / dist;
-                const float delta = 100.0f - dist;
-                object_1.position_current += 0.5f * delta * n;
-                object_2.position_current -= 0.5f * delta * n;
-            }
-        """
-
         object_1 = self
         object_2 = some_other_Verlet
         ball_diameter = self.constraints['ball_radius'] * 2
@@ -131,3 +118,24 @@ class VerletObject:
             return True, new_position
 
         return False, None
+
+
+@dataclass
+class Link:
+    ball_one: VerletObject
+    ball_two: VerletObject
+    target_dist: float
+    is_static: bool  # First object
+
+    def apply_link(self):
+
+        link_axis: Vector2 = self.ball_one.position_current - self.ball_two.position_current
+        obj_distance: float = math.hypot(*link_axis)
+
+        new_vec: Vector2 = link_axis / obj_distance
+        new_delta: float = self.target_dist - obj_distance
+
+        big_delta = new_vec * new_delta * 0.3
+        if not self.is_static:
+            self.ball_one.position_current += big_delta
+        self.ball_two.position_current -= big_delta
