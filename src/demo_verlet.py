@@ -4,6 +4,12 @@ Based on video:
   - How to program a basic Physic Engine by Pezzza's Work
   - https://www.youtube.com/watch?v=lS_qeBy3aQI
 
+Because this is Python/Kivy, the code can currently handle 100 balls,
+but at 150, starts to have a visible slow-down. 200 is right out.
+So, this only goes up to the 5:00 minute-mark in the video - the code
+can't handle thousands of balls. Maybe someday I'll optimize it...
+(Or more likely, just port it to Rust).
+
 Note: The Kivy Widget I'm using to display balls, has a Position,
 but the canvas-circle (or Ellipse) has its own Position that determines
 where it will be displayed. Widgets are separate from what the canvas draws.
@@ -31,9 +37,25 @@ at a different level than the Verlet object.
 I'm not entirely sure from the video, but it looks like it might be using
 an Entity-Component-System (or possibly that's build-in to C++).
 
-Anyway - the collision-code isn't exactly like the video...
+Anyway - the collision-code isn't exactly like the video... Shocker...
+
+Note: adding multiple balls in a loop - all of the balls will be
+instantiated at once (instantly), unless I add a time-delay. However...
+because of how Kivy constructs Widgets, the time-delay can't be inside
+the Widget, or it will just sleep for the time, and *then* instantly
+create all of the balls. So I need a Clock-based function to add them
+one at a time.
+
+Note: the original video used *sub-steps* per Frame. I'm not really sure
+how that's different from having *more* frames-per-second, to be honest.
+Either way, it's tricky to do, because I separated Collision-handling,
+from the Verlet-Solver function, which runs on each object. I did actually
+try a sub-step loop in the Solver, but it basically amplified everything.
+Which was fun to watch - sorta like popcorn - but not exactly realistic...
 
 """
+
+import time
 
 from kivy.app import App
 from kivy.graphics import Color, Ellipse, Rectangle
@@ -48,17 +70,20 @@ Window.top = 0
 Window.left = 400
 window_size = (1600, 1000)
 
-# Random engine constants
-base_gravity = Vector2(0.0, -2)
-delta_t: float = 0.5
-
 pit_constraints = {
     'pit_pos': (0, 0),
     'pit_size': (1000, 1000),
     'pit_radius': 500.0,
     'pit_color': (0.5, 0.5, 0.5, 1.0),
-    'ball_radius': 50,  # Derived from circle-size below, could change
+
+    'gravity': Vector2(0.0, -2),
+    'damp_factor': 0.5,
+    'delta_t': 0.5,
+
+    'ball_radius': 20,
 }
+
+ball_count = 100
 
 
 class BallPit(Widget):
@@ -81,7 +106,7 @@ class OneCircle(Widget):
         self.pos: tuple = start_pos
         self.size = start_size
         self.ball_radius = start_size[0] / 2
-        self.my_verlet: VerletObject = VerletObject(self.pos, base_gravity, delta_t)
+        self.my_verlet: VerletObject = VerletObject(self.pos)
 
         with self.canvas.before:
             Color(*self.color)
@@ -98,6 +123,7 @@ class MainPage(RelativeLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.balls = []
+        self.delayed_balls = []
         self.constraints = {}
 
         self.add_ball_pit()
@@ -114,20 +140,15 @@ class MainPage(RelativeLayout):
         VerletObject.constraints = pit_constraints
         ball_radius = pit_constraints['ball_radius']
 
-        some_pos = (700, 500)
+        some_pos = (750, 800)
         some_size = (ball_radius * 2, ball_radius * 2)
         some_color = (1.0, 1.0, 1.0, 1.0)
-        one_circle = OneCircle(some_pos, some_size, some_color)
-        self.balls.append(one_circle)
 
-        some_pos = (800, 750)
-        some_size = (ball_radius * 2, ball_radius * 2)
-        some_color = (1.0, 1.0, 1.0, 1.0)
-        one_circle = OneCircle(some_pos, some_size, some_color)
-        self.balls.append(one_circle)
+        for x in range(0, ball_count):
+            one_circle = OneCircle(some_pos, some_size, some_color)
+            self.delayed_balls.append(one_circle)
 
-        for a_ball in self.balls:
-            self.add_widget(a_ball)
+        Clock.schedule_interval(self.add_circle_on_delay, 1/4.0)
 
     def add_ball_pit(self):
 
@@ -138,6 +159,15 @@ class MainPage(RelativeLayout):
 
         self.bg_rect.size = self.size
 
+    def add_circle_on_delay(self, *args):
+
+        if self.delayed_balls:
+            one_ball = self.delayed_balls.pop(0)
+            self.balls.append(one_ball)
+            self.add_widget(one_ball)
+        else:
+            Clock.unschedule(self.add_circle_on_delay)
+
     def update_all_circles(self, *args):
 
         collision_list = []
@@ -145,6 +175,7 @@ class MainPage(RelativeLayout):
         for a_ball in self.balls:
             a_ball.UpdatePosition()
 
+            # Handle collisions
             for one_ball in self.balls:
                 if a_ball == one_ball:
                     continue
@@ -153,8 +184,6 @@ class MainPage(RelativeLayout):
                     collision_list.append((a_ball, one_ball))
                     a_ball.my_verlet.position_current += new_vec
                     one_ball.my_verlet.position_current -= new_vec
-
-        # print(f"{collision_list=}")
 
 
 class canvasMain(App):

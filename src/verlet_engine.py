@@ -49,20 +49,20 @@ class Vector2:
 class VerletObject:
     constraints: dict = None
 
-    def __init__(self, initial_pos: tuple, base_gravity: Vector2, delta_t: float, **kwargs):
+    def __init__(self, initial_pos: tuple, **kwargs):
 
         self.position_current: Vector2 = Vector2(*initial_pos)
         self.position_old: Vector2 = Vector2(*initial_pos)
-        self.base_gravity: Vector2 = base_gravity
-        self.delta_t = delta_t
+        self.base_gravity: Vector2 = self.constraints['gravity']
 
         self.acceleration: Vector2 = Vector2(0.0, 0.0)
 
     def SolveForPosition(self) -> Vector2:
 
+        # for x in range(0, 2):  # Popcorn FTW
         self.ApplyGravity()
         self.ApplyConstraints()
-        # self.SolveCollisions()
+        # self.SolveCollisions()  # Checked externally
         self.UpdatePosition()
 
         return self.position_current
@@ -91,10 +91,12 @@ class VerletObject:
 
     def UpdatePosition(self):
 
+        delta_t = self.constraints['delta_t']
+
         velocity: Vector2 = self.position_current - self.position_old
 
         self.position_old = self.position_current
-        self.position_current = self.position_current + velocity + self.acceleration * self.delta_t * self.delta_t
+        self.position_current = self.position_current + velocity + self.acceleration * delta_t * delta_t
 
         self.acceleration = Vector2(0.0, 0.0)  # Reset acceleration to zero - not actually sure why...
 
@@ -115,16 +117,17 @@ class VerletObject:
 
         object_1 = self
         object_2 = some_other_Verlet
+        ball_diameter = self.constraints['ball_radius'] * 2
+        damp_factor = self.constraints['damp_factor']
+
         collision_axis: Vector2 = object_1.position_current - object_2.position_current
         collision_distance: float = math.hypot(*collision_axis)
-        ball_diameter = self.constraints['ball_radius'] * 2
 
         if collision_distance < ball_diameter:
             new_vec: Vector2 = collision_axis / collision_distance
             new_delta: float = ball_diameter - collision_distance
-            big_delta: Vector2 = new_vec * new_delta * 0.9
+            new_position: Vector2 = new_vec * new_delta * damp_factor
 
-            # print(f"{collision_distance=}, {big_delta=}")
-            return True, big_delta
+            return True, new_position
 
         return False, None
