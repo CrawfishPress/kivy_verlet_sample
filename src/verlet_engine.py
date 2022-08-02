@@ -106,6 +106,10 @@ class VerletObject:
         ball_diameter = self.constraints['ball_radius'] * 2
         damp_factor = self.constraints['damp_factor']
 
+        # This is just as slow as hypot()
+        # the_distance = math.dist((object_1.position_current.x, object_1.position_current.y),
+        #                          (object_2.position_current.x, object_2.position_current.y))
+
         collision_axis: Vector2 = object_1.position_current - object_2.position_current
         collision_distance: float = math.hypot(*collision_axis)
 

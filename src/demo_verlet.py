@@ -63,12 +63,16 @@ Going to add Buttons next, that clear the screen, etc.
 
 Linked-balls still broken, need to figure out the dampening-factor.
 
+Added some pre-collision fast-filtering, up to 150 balls now, before
+hitting 1/60th of a second per frame.
+
 TODO: fix Links
 TODO: add more sliders/buttons, to play with all of the constraints.
 
 """
 
 import random
+import time
 
 from kivy.app import App
 from kivy.graphics import Color, Ellipse
@@ -174,7 +178,7 @@ class MainPage(RelativeLayout):
             one_circle = OneCircle(some_pos, some_size, some_color)
             self.delayed_balls.append(one_circle)
 
-        Clock.schedule_interval(self.add_circle_on_delay, 1/4.0)
+        Clock.schedule_interval(self.add_circle_on_delay, 1/6.0)
 
     def add_static_balls(self):
 
@@ -213,7 +217,9 @@ class MainPage(RelativeLayout):
 
     def update_all_circles(self, *args):
 
+        start_time = time.time()
         collision_list = []
+        the_radius = pit_constraints['ball_radius'] * 2.1
 
         for a_ball in self.balls:
             a_ball.UpdatePosition()
@@ -222,6 +228,12 @@ class MainPage(RelativeLayout):
             # Handle collisions
             for one_ball in self.balls:
                 if a_ball == one_ball:
+                    continue
+
+                # Basic fast collision-filtering
+                x_check = abs(one_ball.my_verlet.position_current.x - a_ball.my_verlet.position_current.x)
+                y_check = abs(one_ball.my_verlet.position_current.y - a_ball.my_verlet.position_current.y)
+                if x_check > the_radius or y_check > the_radius:
                     continue
 
                 maybe_new_vec = a_ball.my_verlet.DetectCollision(one_ball.my_verlet)
@@ -233,6 +245,13 @@ class MainPage(RelativeLayout):
         # Update links
         for one_link in self.links:
             one_link.apply_link()
+
+        end_time = time.time()
+        func_time = end_time - start_time
+        pain_str = ""
+        if func_time > 1/60.0:
+            pain_str = "***"
+        print(f"[{pain_str}] update.time = [{func_time:.6f}] sec. Total balls: {len(self.balls)}")
 
 
 class canvasMain(App):
