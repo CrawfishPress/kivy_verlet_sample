@@ -127,11 +127,27 @@ class MainPage(RelativeLayout):
         self.links = []
         self.constraints = {}
 
+        # self.start_demo()  # There's a Button for that...
+
+    def start_demo(self):
+
+        self.remove_all()
+
         self.add_balls()
-        self.add_static_balls()
+        # self.add_static_balls()
         # self.add_links()
 
         Clock.schedule_interval(self.update_all_circles, 1/60.0)
+
+    def remove_all(self):
+
+        if self.balls:
+            for one_ball in self.balls:
+                self.remove_widget(one_ball)
+        self.balls = []
+        self.delayed_balls = []
+        self.static_balls = []
+        self.links = []
 
     def add_balls(self):
 
