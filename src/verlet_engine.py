@@ -59,7 +59,6 @@ class VerletObject:
 
     def SolveForPosition(self) -> Vector2:
 
-        # for x in range(0, 2):  # Popcorn FTW
         self.ApplyGravity()
         self.ApplyConstraints()
         # self.SolveCollisions()  # Checked externally
@@ -67,11 +66,11 @@ class VerletObject:
 
         return self.position_current
 
-    def ApplyGravity(self):
+    def ApplyGravity(self) -> None:
 
         self.acceleration += self.base_gravity
 
-    def ApplyConstraints(self):
+    def ApplyConstraints(self) -> None:
 
         widget_position = self.constraints['pit_pos']
         pit_radius = self.constraints['pit_radius']
@@ -89,7 +88,7 @@ class VerletObject:
             new_pos = pit_center + new_vec * (pit_radius - ball_radius)
             self.position_current = new_pos
 
-    def UpdatePosition(self):
+    def UpdatePosition(self) -> None:
 
         delta_t = self.constraints['delta_t']
 
@@ -100,7 +99,7 @@ class VerletObject:
 
         self.acceleration = Vector2(0.0, 0.0)  # Reset acceleration to zero - not actually sure why...
 
-    def DetectCollision(self, some_other_Verlet) -> (bool, Vector2):
+    def DetectCollision(self, some_other_Verlet) -> Vector2:
 
         object_1 = self
         object_2 = some_other_Verlet
@@ -115,9 +114,9 @@ class VerletObject:
             new_delta: float = ball_diameter - collision_distance
             new_position: Vector2 = new_vec * new_delta * damp_factor
 
-            return True, new_position
+            return new_position
 
-        return False, None
+        return None
 
 
 @dataclass
@@ -126,6 +125,7 @@ class Link:
     ball_two: VerletObject
     target_dist: float
     is_static: bool  # First object
+    damper_factor: float = 0.3
 
     def apply_link(self):
 
@@ -134,8 +134,8 @@ class Link:
 
         new_vec: Vector2 = link_axis / obj_distance
         new_delta: float = self.target_dist - obj_distance
+        big_delta = new_vec * new_delta * self.damper_factor
 
-        big_delta = new_vec * new_delta * 0.3
         if not self.is_static:
             self.ball_one.position_current += big_delta
         self.ball_two.position_current -= big_delta

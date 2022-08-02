@@ -61,6 +61,11 @@ Switching to kv-lang, instead of pure-Python.  Made the BallPit Image
 into a Widget (otherwise it displayed a background *and* the canvas-Circle).
 Going to add Buttons next, that clear the screen, etc.
 
+Linked-balls still broken, need to figure out the dampening-factor.
+
+TODO: fix Links
+TODO: add more sliders/buttons, to play with all of the constraints.
+
 """
 
 import random
@@ -79,7 +84,7 @@ Window.top = 0
 Window.left = 100
 window_size = (1600, 1000)
 
-kv_file = '/home/jcrawford/Code/kivy/verlet_demo/src/layouts.kv'
+kv_file = 'layouts.kv'
 
 pit_constraints = {
     'pit_pos': (0, 0),
@@ -94,7 +99,8 @@ pit_constraints = {
 }
 
 ball_count = 30
-static_ball_count = 1
+static_ball_count = 0
+balls_linked = 5
 
 
 class OneCircle(Widget):
@@ -130,12 +136,17 @@ class MainPage(RelativeLayout):
         # self.start_demo()  # There's a Button for that...
 
     def start_demo(self):
+        global ball_count
+
+        if self.ids and 'ball_slider_id' in self.ids:
+            ball_count = self.ids['ball_slider_id'].value
+            # print(f"*** Slider set to: {self.ids['ball_slider_id'].value}")
 
         self.remove_all()
 
         self.add_balls()
-        # self.add_static_balls()
-        # self.add_links()
+        self.add_static_balls()
+        self.add_links()
 
         Clock.schedule_interval(self.update_all_circles, 1/60.0)
 
@@ -180,15 +191,16 @@ class MainPage(RelativeLayout):
 
     def add_links(self):
 
+        if balls_linked < 2 or static_ball_count == 0:
+            return
+
+        # Link the static-ball first
         one_link = Link(self.static_balls[0].my_verlet, self.delayed_balls[0].my_verlet, 40, True)
         self.links.append(one_link)
 
-        one_link = Link(self.delayed_balls[0].my_verlet, self.delayed_balls[1].my_verlet, 40, True)
-        self.links.append(one_link)
-
-        # Wackiness ensues:
-        # one_link = Link(self.delayed_balls[1].my_verlet, self.delayed_balls[2].my_verlet, 40, True)
-        # self.links.append(one_link)
+        for x in range(0, balls_linked - 1):
+            one_link = Link(self.delayed_balls[x].my_verlet, self.delayed_balls[x+1].my_verlet, 40, True)
+            self.links.append(one_link)
 
     def add_circle_on_delay(self, *args):
 
@@ -206,15 +218,17 @@ class MainPage(RelativeLayout):
         for a_ball in self.balls:
             a_ball.UpdatePosition()
 
+            # TODO: definitely room for optimization here, this is O**2
             # Handle collisions
             for one_ball in self.balls:
                 if a_ball == one_ball:
                     continue
-                collided, new_vec = a_ball.my_verlet.DetectCollision(one_ball.my_verlet)
-                if collided:
+
+                maybe_new_vec = a_ball.my_verlet.DetectCollision(one_ball.my_verlet)
+                if maybe_new_vec:
                     collision_list.append((a_ball, one_ball))
-                    a_ball.my_verlet.position_current += new_vec
-                    one_ball.my_verlet.position_current -= new_vec
+                    a_ball.my_verlet.position_current += maybe_new_vec
+                    one_ball.my_verlet.position_current -= maybe_new_vec
 
         # Update links
         for one_link in self.links:
@@ -224,9 +238,10 @@ class MainPage(RelativeLayout):
 class canvasMain(App):
     def build(self):
 
+        Window.size = window_size
+
         kv_loaded = Builder.load_file(kv_file)
 
-        Window.size = window_size
         return kv_loaded
 
 

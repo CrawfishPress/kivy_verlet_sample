@@ -37,3 +37,16 @@ MainPage:
             text: "Click Me"
             on_release:
                 self.parent.parent.start_demo()
+        Slider:
+            id: ball_slider_id
+            size_hint: 1, 0.1
+            pos_hint: {'top': 0.9}
+            min: 1
+            max: 100
+            step: 1
+            orientation: 'horizontal'
+        Label:
+            size_hint: 1, 0.1
+            pos_hint: {'top': 0.8}
+            text: "Set to: " + str(ball_slider_id.value)
+            color: 0, 0, 0, 1
