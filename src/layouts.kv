@@ -1,0 +1,37 @@
+MainPage:
+    canvas:
+        Color:
+            rgba: 0.9, 0.1, 0.1, 1  # red, should not be visible
+        Rectangle:
+            size: self.size
+            pos: 0, 0
+    RelativeLayout:
+        size_hint: 0.63, 1.0
+        pos_hint: {'left': 1}
+        canvas:
+            Color:
+                rgba: 0.1, 0.1, 0.1, 1
+            Rectangle:
+                size: self.size
+                pos: 0, 0
+        Widget:  # Originally, in code, was the BallPit (was also an Image)
+            pos_hint: {'left': 1}
+            canvas:
+                Color:
+                    rgba: 0.5, 0.5, 0.5, 1
+                Ellipse:
+                    size: 1000, 1000
+                    pos: 0, 0
+    RelativeLayout:
+        size_hint: 0.37, 1.0
+        pos_hint: {'right': 1}
+        canvas:
+            Color:
+                rgba: 0.8, 0.8, 0.8, 1
+            Rectangle:
+                size: self.size
+                pos: 0, 0
+        Button:
+            size_hint: 0.5, 0.1
+            pos_hint: {'top': 1}
+            text: "Click Me"

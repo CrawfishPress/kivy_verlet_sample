@@ -57,29 +57,34 @@ Note: added Links, mostly. The first pass is klunky, because the Widget's
 position, isn't identical to the displayed canvas-circle's center. I need
 to refactor position-handling in general.
 
+Switching to kv-lang, instead of pure-Python.  Made the BallPit Image
+into a Widget (otherwise it displayed a background *and* the canvas-Circle).
+Going to add Buttons next, that clear the screen, etc.
+
 """
 
 import random
-import time
 
 from kivy.app import App
-from kivy.graphics import Color, Ellipse, Rectangle
+from kivy.graphics import Color, Ellipse
 from kivy.uix.widget import Widget
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.clock import Clock
 from kivy.core.window import Window
+from kivy.lang import Builder
 
 from verlet_engine import Vector2, VerletObject, Link
 
 Window.top = 0
-Window.left = 400
+Window.left = 100
 window_size = (1600, 1000)
+
+kv_file = '/home/jcrawford/Code/kivy/verlet_demo/src/layouts.kv'
 
 pit_constraints = {
     'pit_pos': (0, 0),
     'pit_size': (1000, 1000),
     'pit_radius': 500.0,
-    'pit_color': (0.5, 0.5, 0.5, 1.0),
 
     'gravity': Vector2(0.0, -2),
     'damp_factor': 0.5,
@@ -89,19 +94,7 @@ pit_constraints = {
 }
 
 ball_count = 30
-static_ball_count = 0
-
-
-class BallPit(Widget):
-    def __init__(self, constraints: dict, **kwargs):
-        super().__init__(**kwargs)
-        self.pos: tuple = constraints['pit_pos']
-        self.size = constraints['pit_size']
-        self.color: tuple = constraints['pit_color']
-
-        with self.canvas.before:
-            Color(*self.color)
-            self.circle = Ellipse(pos=self.pos, size=self.size)
+static_ball_count = 1
 
 
 class OneCircle(Widget):
@@ -134,16 +127,11 @@ class MainPage(RelativeLayout):
         self.links = []
         self.constraints = {}
 
-        self.add_ball_pit()
         self.add_balls()
         self.add_static_balls()
         # self.add_links()
 
         Clock.schedule_interval(self.update_all_circles, 1/60.0)
-
-        with self.canvas.before:  # Gotta have a background
-            Color(0.1, 0.1, 0.1, 1.0)
-            self.bg_rect = Rectangle()
 
     def add_balls(self):
 
@@ -186,15 +174,6 @@ class MainPage(RelativeLayout):
         # one_link = Link(self.delayed_balls[1].my_verlet, self.delayed_balls[2].my_verlet, 40, True)
         # self.links.append(one_link)
 
-    def add_ball_pit(self):
-
-        self.ball_pit = BallPit(pit_constraints)
-        self.add_widget(self.ball_pit)
-
-    def on_size(self, instance, new_size):
-
-        self.bg_rect.size = self.size
-
     def add_circle_on_delay(self, *args):
 
         if self.delayed_balls:
@@ -229,8 +208,10 @@ class MainPage(RelativeLayout):
 class canvasMain(App):
     def build(self):
 
+        kv_loaded = Builder.load_file(kv_file)
+
         Window.size = window_size
-        return MainPage()
+        return kv_loaded
 
 
 if __name__ == '__main__':
